@@ -9,10 +9,11 @@ cycles = torch.Tensor(
     [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
 numCycles = len(cycles)
 inSize = 2*numCycles # Neural network inputs include sin and cos
-period = max(cycles)
-hourRes = 12 # 5-minute intervals
-scheduleLen = period
+period = max(cycles) # Hours in a week
+hourRes = 2 # 30-minute intervals
+scheduleLen = period*hourRes # Number of intervals
 hiddenSizes = [16]
+times = (torch.range(scheduleLen)+0.5)/hourRes # Center of each interval
 
 # Accepts time in hours (0 to 7*24)
 # Returns tensor of inputs to neural network
@@ -23,26 +24,31 @@ def timeToNNInput(t):
     sines = torch.sin(angles)
     return torch.cat((cosines, sines), 0)
 
-# Accepts list of free blocks,
+# Accepts list of class/other blocks,
 # where each block is a dict containing bounds in hours
 # Returns bool array indicating which intervals are free
-def blocksToFreeTime(freeBlocks):
-    freeTime = torch.BoolTensor(np.zeros(7*24*hourRes))
-    for freeBlock in freeBlocks:
-        start = ceil(freeBlock["start"]*hourRes)
-        stop = floor(freeBlock["stop"]*hourRes)
+def blocksToFreeTime(blocks):
+    freeTime = torch.BoolTensor(torch.ones((scheduleLen,)))
+    for block in blocks:
+        start = ceil(block[0]*hourRes)
+        stop = floor(block[1]*hourRes)
         for interval in range(start, stop):
-            freeTime[interval] = True
+            freeTime[interval] = False
     return freeTime
 
-# freeBlocks: list of dicts
+# classBlocks: list of dicts
 # courses: list of course names
 class Student:
-    def __init__(self, freeBlocks, courses):
-        self.freeTime = blocksToFreeTime(freeBlocks)
+    def __init__(self, blocks, courses):
+        self.freeTime = blocksToFreeTime(blocks)
         self.courses = courses
         self.numCourses = len(courses)
         self.studySchedule = studySchedule(numCourses+1)
+    def updateSchedule(self):
+        self.schedule = torch.zeros(scheduleLen, self.numCourses+1)
+        for i in range(scheduleLen):
+            if self.freeTime[i]:
+                self.schedule[i]=self.studySchedule(times[i])
         
 # Neural network to model schedule
 # Requires number of courses
@@ -61,21 +67,15 @@ class StudySchedule(nn.Module):
     def forward(self, t):
         return self.softmax(self.fcLayers(timeToNNInput(t)))
 
-# Input:
-# allStudents: dict of all students indexed by name
-# Output:
-# roster: lists of students indexed by course name
-# 
-def findShared(allCourses, allStudents):
-    allCourses = set()
-    for name in allStudents:
-        for course in student.courses:
-            pass
-    
-    roster = {course: [] for course in allCourses}
-    for name in allStudents:
-        for course in student.courses:
-            directory[course].append(student.name)
-
-print(timeToNNInput(0))
-print(blocksToFreeTime([{"start": 5, "stop": 7}, {"start": 8, "stop": 12}]))
+class AllStudents:
+    def __init__(self, students):
+        self.students = students
+        self.roster = dict()
+        for name in students:
+            student = students[name]
+            for course in student.courses:
+                if course not in self.roster:
+                    self.roster[course] = []
+                self.roster[course].append(name)
+    def loss(self):
+        
