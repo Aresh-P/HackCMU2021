@@ -10,7 +10,7 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
     groups is of the form:
     For each student (list):
       For each time (list):
-        What study group (int) are they assigned to. (data ignored if not studying)
+        What study group (int) are they assigned to. (-1 means not in any group)
 
     sizes is of the form:
     For each student (list):
@@ -88,11 +88,33 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
     return probabilities
 
 
-def allocate_groups(schedules):
+def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
     """
     schedules is of the form:
     For each student (list):
       For each time (list):
-        What subject are they working on
+        What subject are they working on (specified as int, -1 means not studying)
+
+    courses is the number of courses people are interested in.
+    study groups per course = number of students = len(groups).
+
+    cost function is alpha * group_size_penalty + beta * continuity_penalty,
+    log of probabilities is proportional to e^(-cost function).
+
+    iterations is the number of times to run the reallocation step.
     """
     
+    groups = []
+    for student in range(len(schedules)):
+        student_groups = []
+        for time in range(len(schedules[0])):
+            course = schedules[student][time]
+            if course == -1:
+                student_groups.append(-1)
+            else:
+                study_group = student + course * len(schedules)
+                student_groups.append(study_group)
+        groups.append(student_groups)
+
+    for iteration in range(iterations):
+
