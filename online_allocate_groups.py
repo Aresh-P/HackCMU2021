@@ -82,6 +82,7 @@ def update_groups(schedules, groups, sizes, courses, alpha, beta):
                 #schedules[student][time] is not any of the courses,
                 #so it must be -1, i.e. the student isn't studying.
                 #leave total_cost alone and change nothing.
+                pass
             else:
                 #student is assigned to a course.
                 non_normalized_probabilities = [math.exp(log_probability - max_log_probability) for log_probability in log_allocation_probabilities]
@@ -93,8 +94,8 @@ def update_groups(schedules, groups, sizes, courses, alpha, beta):
                 CDF = 0
                 #use default if probabilities don't work.
                 selected_group = student + schedules[student][time] * len(schedules)
-                for i in range(len(probabilities[student][time])):
-                    CDF += normalized_probabilities[student][time][i]
+                for i in range(len(normalized_probabilities)):
+                    CDF += normalized_probabilities[i]
                     if CDF >= CDF_desired:
                         selected_group = i
                         break
@@ -108,7 +109,7 @@ def update_groups(schedules, groups, sizes, courses, alpha, beta):
     return total_cost
 
 
-def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
+def online_allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
     """
     schedules is of the form:
     For each student (list):
