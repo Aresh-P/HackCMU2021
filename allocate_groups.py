@@ -36,7 +36,7 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
           Non-normalized log of probability student should be assigned to that study group.
     """
 
-    print("groups = " + str(groups))
+    #print("groups = " + str(groups))
     study_group_sizes = []
     for study_group in range(courses*len(groups)):
         study_group_counts = []
@@ -44,7 +44,7 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
             count = 0
             for student in range(len(groups)):
                 if groups[student][time] == study_group:
-                    print("group = " + str(study_group) + " time = " + str(time) + " student = " + str(student))
+                    #print("group = " + str(study_group) + " time = " + str(time) + " student = " + str(student))
                     count += 1
             study_group_counts.append(count)
         study_group_sizes.append(study_group_counts)
