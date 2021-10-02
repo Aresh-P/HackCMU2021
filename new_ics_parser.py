@@ -76,9 +76,9 @@ def createStudentBlock(name, path):
 
     blocks = []
 
-    for icsFileName in (icsFileNames):
+    for icsFileName in (icsFilePaths):
         ####open and read ics file
-        icsFile = open(f"{path}/{name}/{icsFilePath}", "rb")
+        icsFile = open(f"{path}/{name}/{icsFileName}", "rb")
         
         icsCal = Calendar.from_ical(icsFile.read())
 
@@ -223,7 +223,7 @@ def createStudentInfos(path):
 
 # print(os.listdir(""))
 
-print(createStudentInfos("/Users/lucaborletti/Desktop/Hack@CMU/names"))
+#print(createStudentInfos("/Users/lucaborletti/Desktop/Hack@CMU/names"))
 
 
 # print(open("/Users/lucaborletti/Desktop/Hack@CMU/names/luca/F21_schedule.ics", "rb"))

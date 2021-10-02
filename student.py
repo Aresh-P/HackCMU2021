@@ -11,7 +11,7 @@ hourRes = 2 # 30-minute intervals
 numCycles = len(cycles)
 inSize = 2*numCycles # Neural network inputs include sin and cos
 period = max(cycles) # Hours in a week
-scheduleLen = period*hourRes # Number of intervals
+scheduleLen = int(period*hourRes) # Number of intervals
 hiddenSizes = [16]
 times = (torch.arange(scheduleLen)+0.5)/hourRes # Center of each interval
 
@@ -28,7 +28,9 @@ def timeToNNInput(t):
 # where each block is a dict containing bounds in hours
 # Returns bool array indicating which intervals are free
 def blocksToFreeTime(blocks):
-    freeTime = torch.BoolTensor(torch.ones((scheduleLen,)))
+    freeTime = torch.ones(scheduleLen, dtype=bool)
+    for t in range(scheduleLen):
+        freeTime[t] = True
     for block in blocks:
         start = ceil(block["start"]*hourRes)
         stop = floor(block["stop"]*hourRes)
@@ -69,8 +71,8 @@ class StudySchedule(nn.Module):
         self.layerSizes = [inSize]+hiddenSizes+[outSize]
         self.numWeights = len(hiddenSizes)+1
         self.fcLayers = nn.Sequential(
-            nn.Linear(layerSizes[w], layerSizes[w+1])
-            for w in range(numWeights))
+            *list(nn.Linear(self.layerSizes[w], self.layerSizes[w+1])
+                 for w in range(self.numWeights)))
         self.softmax = nn.Softmax()
         
     def forward(self, t):
@@ -78,18 +80,20 @@ class StudySchedule(nn.Module):
 
 class AllStudents:
 
-    def __init__(self, students):
-        self.students = students # {str -> Student}
+    def __init__(self, studentInfos):
+        self.students = {} # {str -> Student}
+        for name in studentInfos:
+            self.students[name] = Student(studentInfos[name]) 
 
-        self.allStudents = list(students.keys())
+        self.allStudents = list(self.students.keys())
         self.totalStudents = len(self.allStudents)
         self.allStudentIndices = {} # {str -> int}, inverse of allStudents
         for s in range(self.totalStudents):
-            self.allStudentIndices[self.allStudents[c]] = c
+            self.allStudentIndices[self.allStudents[s]] = s
 
         self.roster = dict() # {str -> [str]}
-        for name in students:
-            student = students[name]
+        for name in self.students:
+            student = self.students[name]
             for course in student.courses:
                 if course not in self.roster:
                     self.roster[course] = []
