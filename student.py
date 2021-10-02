@@ -4,9 +4,9 @@ from torch import nn, optim
 from math import ceil, floor
 from student_info import StudentInfo
 
- cycles = torch.Tensor(
+cycles = torch.Tensor(
     [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
- hourRes = 2 # 30-minute intervals
+hourRes = 2 # 30-minute intervals
 
 numCycles = len(cycles)
 inSize = 2*numCycles # Neural network inputs include sin and cos
@@ -128,7 +128,7 @@ class AllStudents:
             self.J += studyError
 
     def fit(self):
-        numIters = 1000
+        numIters = 100000
         for i in range(numIters):
             self.updateLoss()
             self.J.backward()

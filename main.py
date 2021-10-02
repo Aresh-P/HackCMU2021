@@ -14,26 +14,25 @@ from torch import nn, optim
 from math import ceil, floor
 from allocate_groups import *
 from groups_to_output import *
-from module_approach_parse_ics import *
+#from module_approach_parse_ics import *
 from new_ics_parser import *
 from online_allocate_groups import *
 from optimizer import *
-from preliminary_ics_parser import *
+#from preliminary_ics_parser import *
 from prompt import *
 from student_info import *
 from student import *
 
-def main():
-    print("Hello!")
-    print("Welcome to the CMU Study Group Finder")
-    print("Our goal is to match you with other CMU students with similar study group preferences as you in order to help you find a study group")
-    print()
-    input("Please Press any key when you are ready to begin")
-    print()
-    studentFolder = input("Please input the name of your study folder ----> ")
-    studentInfo = createStudentInfos(studentFolder)
-    allStudents = AllStudents(studentInfo)
-    allStudents.fit()
-    initialGroups = allStudents.getInitialGroups()
-    groups = online_allocate_groups(*initialGroups)
-    output = groups_to_output(groups)
+print("Hello!")
+print("Welcome to the CMU Study Group Finder")
+print("Our goal is to match you with other CMU students with similar study group preferences as you in order to help you find a study group")
+print()
+input("Please Press any key when you are ready to begin")
+print()
+studentFolder = input("Please input the name of your study folder ----> ")
+studentInfo = createStudentInfos(studentFolder)
+allStudents = AllStudents(studentInfo)
+allStudents.fit()
+initialGroups = allStudents.getInitialGroups()
+groups = online_allocate_groups(*initialGroups)
+output = groups_to_output(groups)
