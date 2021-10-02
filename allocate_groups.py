@@ -80,6 +80,8 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
                     overall_penalty = alpha * group_size_allocation_penalty + beta * continuity_penalty
                     log_allocation_probabilities.append(-overall_penalty)
 
+            student_log_raw.append(log_allocation_probabilities)
+
             max_log_probability = max(log_allocation_probabilities)
             if max_log_probability == -float("inf"):
                 #schedules[student][time] is not any of the courses,
@@ -92,8 +94,9 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
                 normalization = sum(non_normalized_probabilities)
                 normalized_probabilities = [non_normalized_probability / normalization for non_normalized_probability in non_normalized_probabilities]
             student_probabilities.append(normalized_probabilities)
+        log_raw.append(student_log_raw)
         probabilities.append(student_probabilities)
-    return probabilities
+    return (probabilities, log_raw)
 
 
 def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
