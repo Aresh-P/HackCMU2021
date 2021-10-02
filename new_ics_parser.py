@@ -1,91 +1,376 @@
+from prompt import createStudentGroup
+from student_info import StudentInfo
+import random
+import os, sys
 import icalendar
 from icalendar import Calendar, Event
 import pytz
 from datetime import datetime, timedelta
 
 def findSundayBaseTime(firstStartTime):
+    ####find the sunday before the week specified in the calendar
     sundayBaseTime = firstStartTime - \
         timedelta(days=((firstStartTime.isoweekday()) % 7))
     sundayBaseTime = sundayBaseTime.replace(hour = 0, minute = 0, second = 0)
     return sundayBaseTime
 
 def hourDiff(laterTime, firstTime):
+    ####find hour difference between two times
     return (laterTime-firstTime).total_seconds()/3600
 
-g = open("/Users/lucaborletti/Desktop/Hack@CMU/F21_schedule.ics", "rb")
-gcal = Calendar.from_ical(g.read())
+def repeatingEvent(event):
+    ####check if has rrule and then if more than 1 "bydays" or repeating days
+    if "RRULE" not in str(event):
+        return False
+    repeatingDays = event["RRULE"]["BYDAY"]
+    return len(repeatingDays) > 1
 
-print(gcal)
+def createStudentBlock(name, path):
+    icsFilePaths = os.listdir(name)
 
-#find first block class or event
+    blocks = []
+    for icsFilePath in (icsFilePaths):
+        ####open and read ics file
+        icsFile = open(f"{path}/{icsFilePath}", "rb")
+        
+        icsCal = Calendar.from_ical(icsFile.read())
 
-firstStartTime = gcal.walk("VEVENT")[0]["DTSTART"].dt
+        ####check if SIO file or not by analyzing traces of SIO formatting
+        if "Instructor" in str(icsCal.walk("VEVENT")[0]):
+            firstStartTime = icsCal.walk("VEVENT")[0]["DTSTART"].dt
 
-sundayBaseTime = findSundayBaseTime(firstStartTime)
+            sundayStartTime = findSundayBaseTime(firstStartTime)
+
+            sundayEndTime = sundayStartTime + timedelta(days = 7)
+        else:
+            today = datetime.today()
+            
+            sundayStartTime = findSundayBaseTime(today)
+
+            sundayEndTime = sundayStartTime + timedelta(days = 7)
+
+        ####create days of week for bi,tri,…-weekly events
+        daysOfWeek = {}
+        days = ["SU","MO","TU","WE","TH","FR","SA"]
+        numbers = [0,1,2,3,4,5,6]
+        for i in range(7):
+            daysOfWeek[days[i]] = numbers[i]
+
+        ####now LOOP OVER EVENTS IN ICS FILE and add time intervals to list
+        for event in icsCal.walk("VEVENT"):
+            ####BLOCKS####
+
+            ####initialize datetime variables
+            startTime = event["DTSTART"].dt
+            endTime = event["DTEND"].dt
+            
+            ####check if valid event
+            if startTime < sundayStartTime or endTime > sundayEndTime:
+                continue
+
+            ####measure hours since start of week (saturday midnight)
+            hourStartTime = hourDiff(startTime, sundayStartTime)
+            hourEndTime = hourDiff(endTime, sundayStartTime)
+
+            ####create an empty dictionary; initialize values to strings
+            intervalDict = {}
+            intervalDict["start"] = hourStartTime
+            intervalDict["stop"] = hourEndTime
+            
+            ####add dictionaries to blocks
+            blocks.append(intervalDict)
+            
+            # courseName = str(event["DESCRIPTION"])
+            # print(f"Main event: {courseName}")
+            # print(intervalDict)
+            # print("\n")
+
+            if (repeatingEvent(event)):
+                repeatingDays = event["RRULE"]["BYDAY"]
+                for day in repeatingDays[1:]:
+                    dayDifference = daysOfWeek[day] - daysOfWeek[repeatingDays[0]]
+                    
+                    intervalDict = {}
+                    intervalDict["start"] = hourStartTime + 24*dayDifference
+                    intervalDict["stop"] = hourEndTime +  24*dayDifference
+                    blocks.append(intervalDict)
+                    
+                    # print(intervalDict)
+                    # print("\n")
+
+        # print(blocks)
+
+        #### implement sleep schedule 
+        for day in range(7):
+            intervalDict = {}
+            intervalDict["start"] = 24*day
+            intervalDict["stop"] =  7 + 24*day
+            blocks.append(intervalDict)
+
+        return blocks
 
 
+def fromSio(icsFile):
+    icsCal = Calendar.from_ical(icsFile.read())
 
-#now loop through events and add time intervals to list
-unsortedStartEndTimes = []
-
-for event in gcal.walk("VEVENT"):
-    startTime = hourDiff(event["DTSTART"].dt, sundayBaseTime)
-    endTime = hourDiff(event["DTSTART"].dt, sundayBaseTime)
-    if 
-
-
-
-
-#dict: initialize
-
-    #x = dict()
-    #or ……… x = {}
+    ####check if SIO file or not by analyzing traces of SIO formatting
+    if "Instructor" in str(icsCal.walk("VEVENT")[0]):
+        return True
     
-#now initialize value to something
+    return False
 
-    #X["asdf"] = 3
+def createStudentGoals(icsFile):
+    icsCal = Calendar.from_ical(icsFile.read())
+    
+    goals = {}
 
-    #"asdf" index, and storing 3 in that index
+    for event in icsCal.walk("VEVENT"):
+        
+        # input("") ***
+        
+        rawCourseName = event["DESCRIPTION"]
+
+        courseNum = [i for i in rawCourseName.split() if i.isdigit()][:5]
+
+        goal = 5*random.random()
+
+        goals[courseNum] = goal
+
+    return goals
 
 
-temp = str(gcal.walk("VEVENT")[2]["RRULE"]["BYDAY"])
+def createStudentInfos(path):
+    studentInfos = {}
 
-print(temp)
+    studentFolders = os.listdir(path)
 
-temp = temp.strip("][")
+    for name in studentFolders: #want string from arg
+        
+        block = createStudentBlock(f"{path}/{name}")
+        
+        for icsPath in os.listdir(name): #want path in arg
+            
+            icsFile = open(f"{path}/{name}/{icsPath}", "rb")
 
-print(temp)
+            if fromSio(icsFile):
 
-temp = temp.replace("'", "")
+                goals = createStudentGoals(icsFile)
 
-print(temp)
+        group = createStudentGroup()
+        
+        studentInfos[name] = studentInfo(
+            block,
+            goals,
+            group
+        )
 
-temp = temp.split(",")
+    return studentInfos
 
-SU,MO,TU,WE,TH,FR,SA = 7,1,2,3,4,5,6
 
-for i in temp[1:]:
 
-print(temp)
+
+
+    
+        
+
+
+
+
+
+# sampleBlocks = [
+#     {"start": 12, "stop": 13}, # 12:00 PM - 1:00 PM Sun
+#     {"start": 42, "stop": 44}, #  6:00 PM - 8:00 PM Mon
+#     # possibly more entries...
+# ]
+
+# sampleGoals = {
+#     "15151": 6, # Hours/week
+#     "15122": 5,
+#     # possibly more entries...
+# }
+
+# sampleGroup = {"mingroup": 2, "maxgroup": 10} # Just one per student
+
+# sampleInfo = StudentInfo(
+#     sampleBlocks,
+#     sampleGoals,
+#     sampleGroup
+#     )
+
+
+################################################################
+################################################################
+################################################################
+################################################################
+################################################################
+
+
+# icsFile = open("/Users/lucaborletti/Desktop/Hack@CMU/F21_schedule.ics", "rb")
+
+# icsCal = Calendar.from_ical(icsFile.read())
+
+# ####check if SIO file or not by analyzing traces of SIO formatting
+# if "Instructor" in str(icsCal.walk("VEVENT")[0]):
+#     firstStartTime = icsCal.walk("VEVENT")[0]["DTSTART"].dt
+
+#     sundayStartTime = findSundayBaseTime(firstStartTime)
+
+#     sundayEndTime = sundayStartTime + timedelta(days = 7)
+# else:
+#     today = datetime.today()
+    
+#     sundayStartTime = findSundayBaseTime(today)
+
+#     sundayEndTime = sundayStartTime + timedelta(days = 7)
+
+# ####create days of week for bi,tri,…-weekly events
+# daysOfWeek = {}
+# days = ["SU","MO","TU","WE","TH","FR","SA"]
+# numbers = [0,1,2,3,4,5,6]
+# for i in range(7):
+#     daysOfWeek[days[i]] = numbers[i]
+
+# ####now LOOP OVER EVENTS IN ICS FILE and add time intervals to list
+# blocks = []
+# for event in icsCal.walk("VEVENT"):
+#     ####BLOCKS####
+
+#     ####initialize datetime variables
+#     startTime = event["DTSTART"].dt
+#     endTime = event["DTEND"].dt
+    
+#     ####check if valid event
+#     if startTime < sundayStartTime or endTime > sundayEndTime:
+#         continue
+
+#     ####measure hours since start of week (saturday midnight)
+#     hourStartTime = hourDiff(startTime, sundayStartTime)
+#     hourEndTime = hourDiff(endTime, sundayStartTime)
+
+#     ####create an empty dictionary; initialize values to strings
+#     intervalDict = {}
+#     intervalDict["start"] = hourStartTime
+#     intervalDict["stop"] = hourEndTime
+    
+#     ####add dictionaries to blocks
+#     blocks.append(intervalDict)
+    
+#     courseName = str(event["DESCRIPTION"])
+
+#     print(f"Main event: {courseName}")
+#     print(intervalDict)
+#     print("\n")
+
+#     if (repeatingEvent(event)):
+#         repeatingDays = event["RRULE"]["BYDAY"]
+#         for day in repeatingDays[1:]:
+#             dayDifference = daysOfWeek[day] - daysOfWeek[repeatingDays[0]]
+            
+#             intervalDict = {}
+#             intervalDict["start"] = hourStartTime + 24*dayDifference
+#             intervalDict["stop"] = hourEndTime +  24*dayDifference
+#             blocks.append(intervalDict)
+#             print(intervalDict)
+#             print("\n")
+
+
+# for day in range(7):
+#     intervalDict = {}
+#     intervalDict["start"] = 24*day
+#     intervalDict["stop"] =  7 + 24*day
+#     blocks.append(intervalDict)
+
+# print(blocks)
+
+
+
+
+
+
+                                    # class StudentInfo:
+                                    #     def __init__(self, blocks, goals, group):
+                                    #         self.blocks = blocks
+                                    #         self.goals = goals
+                                    #         self.group = group
+
+                                    # sampleBlocks = [
+                                    #     {"start": 12, "stop": 13}, # 12:00 PM - 1:00 PM Sun
+                                    #     {"start": 42, "stop": 44}, #  6:00 PM - 8:00 PM Mon
+                                    #     # possibly more entries...
+                                    # ]
+
+                                    # sampleGoals = {
+                                    #     "15151": 6, # Hours/week
+                                    #     "15122": 5,
+                                    #     # possibly more entries...
+                                    # }
+
+                                    # sampleGroup = {"mingroup": 2, "maxgroup": 10} # Just one per student
+
+                                    # sampleInfo = StudentInfo(
+                                    #     sampleBlocks,
+                                    #     sampleGoals,
+                                    #     sampleGroup
+                                    #     )
+
+
+
+                                    #dict: initialize
+
+                                        #x = dict()
+                                        #or ……… x = {}
+                                        
+                                    #now initialize value to something
+
+                                        #X["asdf"] = 3
+
+                                        #"asdf" index, and storing 3 in that index
+
+
+
+
+
+# print(gcal)
+
+# print(gcal.walk("VEVENT")[0]["RRULE"]["BYDAY"])
+
+# g2 = open("/Users/lucaborletti/Desktop/Hack@CMU/lborlett@andrew.cmu.edu.ical/lgborletti@gmail.com.ics",\
+#      "rb")
+# g2cal = Calendar.from_ical(g2.read())
+
+# print(str(g2cal.walk("VEVENT")[1]))
+
+# daysRepeat = "RRULE" in str(g2cal.walk("VEVENT")[1])
+
+# print(daysRepeat)
+
+####find first block class or event
+
+
+
+# temp = str(gcal.walk("VEVENT")[2]["RRULE"]["BYDAY"])
+
+# print(temp)
 
 # temp = temp.strip("][")
 
-# print(temp[(temp.find("BYDAY")+8):-2])
+# print(temp)
 
-# print((temp[(temp.find("BYDAY")+8):-2]).strip("][").strip("\'\'").split(','))
+# temp = temp.replace("'", "")
 
-# gcal.walk("VEVENT")[1]["DTSTART"].dt   
-    
-    #find bydays
-    daysRepeat = gcal.walk("VEVENT")[2]["RRULE"]["BYDAY"]
-    
-    #turn bydays into a list
-    # daysRepeat = daysRepeat.strip()
+# print(temp)
 
-    # if str(event["RRULE"])
+# temp = temp.split(",")
+
+# SU,MO,TU,WE,TH,FR,SA = 7,1,2,3,4,5,6
+
+# for i in temp[1:]:
+
+# print(temp)
 
 
-print(unsortedStartEndTimes)
+
+
 
 # classTimeTuples = [(, gcal.walk("VEVENT")[0])]
 # for event in gcal.walk("VEVENT"):
