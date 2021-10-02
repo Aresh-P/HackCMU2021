@@ -30,25 +30,31 @@ def timeToNNInput(t):
 def blocksToFreeTime(blocks):
     freeTime = torch.BoolTensor(torch.ones((scheduleLen,)))
     for block in blocks:
-        start = ceil(block[0]*hourRes)
-        stop = floor(block[1]*hourRes)
+        start = ceil(block["start"]*hourRes)
+        stop = floor(block["stop"]*hourRes)
         for interval in range(start, stop):
             freeTime[interval] = False
     return freeTime
 
-# classBlocks: list of dicts
-# courses: list of course names
+# see student_info.py
 class Student:
-    def __init__(self, blocks, courses):
-        self.freeTime = blocksToFreeTime(blocks)
-        self.courses = courses
-        self.numCourses = len(courses)
-        self.studySchedule = studySchedule(numCourses+1)
-    def updateSchedule(self):
-        self.schedule = torch.zeros(scheduleLen, self.numCourses+1)
+    def __init__(self, studentInfo):
+        self.blocks = studentInfo.blocks
+        self.goals = studentInfo.goals
+        self.group = studentInfo.group
+        self.freeTime = blocksToFreeTime(self.blocks)
+        self.courses = list(self.goals.keys())
+        self.numCourses = len(self.courses)
+        self.studySchedule = StudySchedule(self.numCourses+1)
+    def updateSchedule(self, scheduleLen):
+        self.scheduleTensor = torch.zeros(scheduleLen, self.numCourses+1)
         for i in range(scheduleLen):
             if self.freeTime[i]:
-                self.schedule[i]=self.studySchedule(times[i])
+                self.scheduleTensor[i]=self.studySchedule(times[i])
+        for c in range(self.numCourses):
+            course = self.courses[c]
+            
+            
         
 # Neural network to model schedule
 # Requires number of courses
