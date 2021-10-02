@@ -1,11 +1,57 @@
-from prompt import createStudentGroup
-from student_info import StudentInfo
+# from prompt import createStudentGroup
+# from student_info import StudentInfo
 import random
 import os, sys
 import icalendar
 from icalendar import Calendar, Event
 import pytz
 from datetime import datetime, timedelta
+
+class StudentInfo:
+    def __init__(self, blocks, goals, group):
+        self.blocks = blocks
+        self.goals = goals
+        self.group = group
+
+def maxInput(studentName):
+    max = input(f'{studentName}, What is the maximum people you want to work with? --> ')
+    if max.isnumeric():
+        max = int(max)
+    valid = False
+    if isinstance(max,int)==False:
+        while valid == False:
+            max = input(f'Please input a valid number of max people {studentName} --> ')
+            if max.isnumeric():
+                max = int(max)
+            if max < 0:
+                continue
+            else:
+                valid = True
+    return max
+
+def minInput(studentName):
+    min = input(f'{studentName}, What is the minimum people you want to work with? --> ')
+    if min.isnumeric():
+        min = int(min)
+    valid = False
+    if isinstance(min,int)==False:
+        while valid == False:
+            min = input(f'Please input a valid number of max people {studentName} --> ')
+            if min.isnumeric():
+                min = int(min)
+            if min < 0:
+                continue
+            else:
+                valid = True
+    return min
+
+def createStudentGroup(studentName):
+    studentInput = {}
+    max = maxInput(studentName)
+    min = minInput(studentName)
+    studentInput["mingroup"] = min
+    studentInput["maxgroup"] = max
+    return studentInput
 
 def findSundayBaseTime(firstStartTime):
     ####find the sunday before the week specified in the calendar
@@ -25,13 +71,15 @@ def repeatingEvent(event):
     repeatingDays = event["RRULE"]["BYDAY"]
     return len(repeatingDays) > 1
 
-def createStudentBlock(name, path):
-    icsFilePaths = os.listdir(name)
+def createStudentBlock(path):
+    ####create a list containing names of all ics files
+    icsFileNames = os.listdir(path)
 
     blocks = []
-    for icsFilePath in (icsFilePaths):
+
+    for icsFileName in (icsFileNames):
         ####open and read ics file
-        icsFile = open(f"{path}/{icsFilePath}", "rb")
+        icsFile = open(f"{path}/{icsFileName}", "rb")
         
         icsCal = Calendar.from_ical(icsFile.read())
 
@@ -101,37 +149,41 @@ def createStudentBlock(name, path):
         # print(blocks)
 
         #### implement sleep schedule 
+        # input("") ***
         for day in range(7):
             intervalDict = {}
             intervalDict["start"] = 24*day
             intervalDict["stop"] =  7 + 24*day
             blocks.append(intervalDict)
 
+
+        ####return list of dictionaries
         return blocks
 
 
 def fromSio(icsFile):
+    ####check if SIO file or not by analyzing traces of SIO formatting
     icsCal = Calendar.from_ical(icsFile.read())
 
-    ####check if SIO file or not by analyzing traces of SIO formatting
     if "Instructor" in str(icsCal.walk("VEVENT")[0]):
         return True
     
     return False
 
 def createStudentGoals(icsFile):
+    ####generate student goals dictionary where course nums are keys to "goals"
     icsCal = Calendar.from_ical(icsFile.read())
     
     goals = {}
 
     for event in icsCal.walk("VEVENT"):
         
-        # input("") ***
-        
         rawCourseName = event["DESCRIPTION"]
 
-        courseNum = [i for i in rawCourseName.split() if i.isdigit()][:5]
+        courseNum = [i for i in rawCourseName.split() if i.isdigit()][0]
 
+        ####implement goals for each course number
+        # input("") ***
         goal = 5*random.random()
 
         goals[courseNum] = goal
@@ -140,15 +192,17 @@ def createStudentGoals(icsFile):
 
 
 def createStudentInfos(path):
+    ####create dictionary of student info class objects
+
     studentInfos = {}
 
-    studentFolders = os.listdir(path)
+    names = os.listdir(path)
 
-    for name in studentFolders: #want string from arg
+    for name in names:
         
         block = createStudentBlock(f"{path}/{name}")
         
-        for icsPath in os.listdir(name): #want path in arg
+        for icsPath in os.listdir(f"{path}/{name}"): 
             
             icsFile = open(f"{path}/{name}/{icsPath}", "rb")
 
@@ -167,7 +221,9 @@ def createStudentInfos(path):
     return studentInfos
 
 
+# print(os.listdir(""))
 
+print(createStudentInfos("/Users/lucaborletti/Desktop/Hack@CMU/names"))
 
 
     
