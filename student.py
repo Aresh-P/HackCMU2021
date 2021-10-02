@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import sin, cos
 from math import ceil, floor
+from student_info import StudentInfo
 
 cycles = torch.Tensor(
     [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
@@ -51,10 +52,10 @@ class Student:
         for i in range(scheduleLen):
             if self.freeTime[i]:
                 self.scheduleTensor[i]=self.studySchedule(times[i])
-        for c in range(self.numCourses):
+        self.schedule = {}
+        for c in range(self.numCourses+1):
             course = self.courses[c]
-            
-            
+            self.schedule[course] = self.scheduleTensor[:, c]
         
 # Neural network to model schedule
 # Requires number of courses
@@ -75,8 +76,8 @@ class StudySchedule(nn.Module):
 
 class AllStudents:
     def __init__(self, students):
-        self.students = students
-        self.roster = dict()
+        self.students = students # {str -> Student}
+        self.roster = dict() # {str -> [str]}
         for name in students:
             student = students[name]
             for course in student.courses:
@@ -84,4 +85,23 @@ class AllStudents:
                     self.roster[course] = []
                 self.roster[course].append(name)
     def loss(self):
+        J = 0
+        for course in self.roster: # course name
+            directory = self.roster[course] # list of student names
+            courseSize = len(directory) # number of students in course
+            avgSchedule = torch.zeros(scheduleLen)
+            studyError = 0
+            for name in directory: # name of given student
+                student = directory[name] # Student object
+                student.updateSchedule() # create schedule : {str -> FloatTensor by time}
+                courseSchedule = student.schedule[course]
+                avgSchedule += courseSchedule
+                studyTime = torch.sum(courseSchedule)/hourRes
+                studyGoal = student.goals[course]
+                studyError += ((studyTime-studyGoal)/studyGoal)^2
+            avgSchedule /= courseSize
+            studyError /= courseSize
+            J += torch.linalg.vector_norm(avgSchedule)/scheduleLen
+            J -= studyError                
+    def fit(self):
         pass
