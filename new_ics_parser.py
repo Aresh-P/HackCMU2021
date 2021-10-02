@@ -26,12 +26,12 @@ def repeatingEvent(event):
     return len(repeatingDays) > 1
 
 def createStudentBlock(name, path):
-    icsFilePaths = os.listdir(name)
+    icsFilePaths = os.listdir(f"{path}/{name}")
 
     blocks = []
     for icsFilePath in (icsFilePaths):
         ####open and read ics file
-        icsFile = open(f"{path}/{icsFilePath}", "rb")
+        icsFile = open(f"{path}/{name}/{icsFilePath}", "rb")
         
         icsCal = Calendar.from_ical(icsFile.read())
 
@@ -146,9 +146,9 @@ def createStudentInfos(path):
 
     for name in studentFolders: #want string from arg
         
-        block = createStudentBlock(f"{path}/{name}")
+        block = createStudentBlock(name, path)
         
-        for icsPath in os.listdir(name): #want path in arg
+        for icsPath in os.listdir(f"{path}/{name}"): #want path in arg
             
             icsFile = open(f"{path}/{name}/{icsPath}", "rb")
 
