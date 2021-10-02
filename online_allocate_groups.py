@@ -42,7 +42,7 @@ def update_groups(schedules, groups, sizes, courses, alpha, beta):
             study_group_counts.append(count)
         study_group_sizes.append(study_group_counts)
 
-    print("study_group_sizes = " + str(study_group_sizes))
+    #print("study_group_sizes = " + str(study_group_sizes))
     
     total_cost = 0
     for student in range(len(groups)):
@@ -64,7 +64,7 @@ def update_groups(schedules, groups, sizes, courses, alpha, beta):
                     under_penalty = max(0, sizes[student]["mingroup"] - potential_group_size)
                     #only one of over_penalty and under_penalty should be non-zero at a time.
                     group_size_allocation_penalty = over_penalty + under_penalty
-                    print(potential_group_size, under_penalty, over_penalty, group_size_allocation_penalty)
+                    #print(potential_group_size, under_penalty, over_penalty, group_size_allocation_penalty)
 
                     continuity_penalty = 0
                     if time > 0:
