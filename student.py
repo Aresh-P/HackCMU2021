@@ -57,13 +57,6 @@ class Student:
         for c in range(self.numCourses+1):
             course = self.courses[c]
             self.schedule[course] = self.scheduleTensor[:, c]
-
-    def getBinSchedule(self):
-        binSchedule = [""]*scheduleLen
-        for t in np.random.permutation(scheduleLen):
-            
-        return binSchedule
-            
         
 # Neural network to model schedule
 # Requires number of courses
@@ -87,6 +80,13 @@ class AllStudents:
 
     def __init__(self, students):
         self.students = students # {str -> Student}
+
+        self.allStudents = list(students.keys())
+        self.totalStudents = len(self.allStudents)
+        self.allStudentIndices = {} # {str -> int}, inverse of allStudents
+        for s in range(self.totalStudents):
+            self.allStudentIndices[self.allStudents[c]] = c
+
         self.roster = dict() # {str -> [str]}
         for name in students:
             student = students[name]
@@ -94,14 +94,22 @@ class AllStudents:
                 if course not in self.roster:
                     self.roster[course] = []
                 self.roster[course].append(name)
+
+        self.allCourses = list(roster.keys())
+        self.totalCourses = len(self.allCourses)
+        self.allCourseIndices = {} # {str -> int}, inverse of allCourses
+        for c in range(self.totalCourses):
+            self.allCourseIndices[self.allCourses[c]] = c
+
         self.optimizer = optim.SGD(
-            sum(list(student.studySchedule.params) for student in self.student, []),
+            sum((list(student.studySchedule.params) for student in self.students), []),
             lr=0.001, momentum=0.9
         )
 
     def updateLoss(self):
         self.J = 0
-        for course in self.roster: # course name
+        for c in range(self.totalCourses): # course index
+            course = self.allCourses[c]
             directory = self.roster[course] # list of student names
             courseSize = len(directory) # number of students in course
             avgSchedule = torch.zeros(scheduleLen)
@@ -129,3 +137,23 @@ class AllStudents:
                 print("Iteration: ", i+1)
                 print("Loss: ", self.J)
 
+    def getInitialGroups(self):
+        schedules = [[-1]*scheduleLen]*self.totalStudents
+        for s in range(self.totalStudents):
+            name = self.allStudents[s]
+            student = self.students[name]
+            scheduleTensor = student.scheduleTensor
+            for t in range(scheduleLen):
+                block = torch.argmax(scheduleTensor[t])
+                if (block < student.numCourses):
+                    schedules[s][t] = block
+
+        sizes = [self.students[self.allStudents[s]].group
+                 for s in range(self.totalStudents)]
+
+        courses = max(max(schedule) for schedule in schedules) + 1
+        
+        alpha = 5
+        beta = 5
+        iterations = 500
+        return schedules, sizes, courses, alpha, beta, iterations
