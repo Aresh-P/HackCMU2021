@@ -2,7 +2,7 @@ import math
 import random
 from copy import deepcopy
 
-def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
+def update_groups(schedules, groups, sizes, courses, alpha, beta):
     """
     schedules is of the form:
     For each student (list):
@@ -25,15 +25,8 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
     log of probabilities is proportional to e^(-cost function).
 
     Returns:
-    For each student (list):
-      For each time (list):
-        For each study group (list):
-          Normalized probability student should be assigned to that study group.
-
-    For each student (list):
-      For each time (list):
-        For each study group (list):
-          Non-normalized log of probability student should be assigned to that study group.
+    Total cost
+    Modifies groups in place.
     """
 
     #print("groups = " + str(groups))
@@ -51,11 +44,8 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
 
     print("study_group_sizes = " + str(study_group_sizes))
     
-    probabilities = []
-    log_raw = []
+    total_cost = 0
     for student in range(len(groups)):
-        student_probabilities = []
-        student_log_raw = []
         for time in range(len(groups[0])):
             log_allocation_probabilities = [] #not normalized!
             for study_group in range(courses*len(groups)):
@@ -63,14 +53,12 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
                 if schedules[student][time] != course:
                     log_allocation_probabilities.append(-float("inf")) #log 0 = -inf
                 else:
-                    #if groups[student][time] == study_group:
-                    #    #study group size already takes into account this student's presence
-                    #    potential_group_size = study_group_sizes[study_group][time]
-                    #else:
-                    #    #study group size does not take into account this student's presence
-                    #    potential_group_size = study_group_sizes[study_group][time] + 1
-                    #CONVERGENCE ISSUES DON'T RUN COMMENTED OUT CODE
-                    potential_group_size = study_group_sizes[study_group][time] + 1
+                    if groups[student][time] == study_group:
+                        #study group size already takes into account this student's presence
+                        potential_group_size = study_group_sizes[study_group][time]
+                    else:
+                        #study group size does not take into account this student's presence
+                        potential_group_size = study_group_sizes[study_group][time] + 1
 
                     over_penalty = max(0, potential_group_size - sizes[student]["maxgroup"])
                     under_penalty = max(0, sizes[student]["mingroup"] - potential_group_size)
@@ -89,23 +77,35 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
                     overall_penalty = alpha * group_size_allocation_penalty + beta * continuity_penalty
                     log_allocation_probabilities.append(-overall_penalty)
 
-            student_log_raw.append(log_allocation_probabilities)
-
             max_log_probability = max(log_allocation_probabilities)
             if max_log_probability == -float("inf"):
                 #schedules[student][time] is not any of the courses,
                 #so it must be -1, i.e. the student isn't studying.
-                #The probabilities should all be zero.
-                normalized_probabilities = [0 for log_probability in log_allocation_probabilities]
+                #leave total_cost alone and change nothing.
             else:
                 #student is assigned to a course.
                 non_normalized_probabilities = [math.exp(log_probability - max_log_probability) for log_probability in log_allocation_probabilities]
                 normalization = sum(non_normalized_probabilities)
                 normalized_probabilities = [non_normalized_probability / normalization for non_normalized_probability in non_normalized_probabilities]
-            student_probabilities.append(normalized_probabilities)
-        log_raw.append(student_log_raw)
-        probabilities.append(student_probabilities)
-    return (probabilities, log_raw)
+
+                old_group = groups[student][time]
+                CDF_desired = random.random()
+                CDF = 0
+                #use default if probabilities don't work.
+                selected_group = student + schedules[student][time] * len(schedules)
+                for i in range(len(probabilities[student][time])):
+                    CDF += normalized_probabilities[student][time][i]
+                    if CDF >= CDF_desired:
+                        selected_group = i
+                        break
+                groups[student][time] = selected_group
+                total_cost -= log_allocation_probabilities[selected_group] #value is negative, so subtract to add cost.
+
+                if selected_group != old_group:
+                    study_group_sizes[old_group][time] -= 1
+                    study_group_sizes[selected_group][time] += 1
+
+    return total_cost
 
 
 def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
@@ -148,30 +148,7 @@ def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
     costs_over_time = []
     groups_over_time = []
     for iteration in range(iterations):
-        probability_output = probability_distribution(schedules, groups, sizes, courses, alpha, beta)
-        probabilities = probability_output[0]
-        log_raw = probability_output[1]
-
-        print(probabilities)
-
-        total_cost = 0
-        for student in range(len(schedules)):
-            for time in range(len(schedules[0])):
-                if schedules[student][time] == -1:
-                    groups[student][time] = -1
-                    #total_cost should remain untouched.
-                else:
-                    CDF_desired = random.random()
-                    CDF = 0
-                    #use default if probabilities don't work.
-                    selected_group = student + schedules[student][time] * len(schedules)
-                    for i in range(len(probabilities[student][time])):
-                        CDF += probabilities[student][time][i]
-                        if CDF >= CDF_desired:
-                            selected_group = i
-                            break
-                    groups[student][time] = selected_group
-                    total_cost -= log_raw[student][time][selected_group] #value is negative, so subtract to add cost.
+        total_cost = update_groups(schedules, groups, sizes, courses, alpha, beta)
         
         costs_over_time.append(total_cost)
         groups_over_time.append(deepcopy(groups))
