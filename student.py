@@ -1,20 +1,22 @@
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn, optim
 import torch.nn.functional as F
-from torch import sin, cos
 from math import ceil, floor
 from student_info import StudentInfo
 
-cycles = torch.Tensor(
-    [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
+# cycles = torch.Tensor(
+#    [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
+# hourRes = 2 # 30-minute intervals
+cycles = torch.Tensor([2, 1])
+hourRes = 3
+
 numCycles = len(cycles)
 inSize = 2*numCycles # Neural network inputs include sin and cos
 period = max(cycles) # Hours in a week
-hourRes = 2 # 30-minute intervals
 scheduleLen = period*hourRes # Number of intervals
 hiddenSizes = [16]
-times = (torch.range(scheduleLen)+0.5)/hourRes # Center of each interval
+times = (torch.arange(scheduleLen)+0.5)/hourRes # Center of each interval
 
 # Accepts time in hours (0 to 7*24)
 # Returns tensor of inputs to neural network
@@ -84,8 +86,12 @@ class AllStudents:
                 if course not in self.roster:
                     self.roster[course] = []
                 self.roster[course].append(name)
-    def loss(self):
-        J = 0
+        self.optimizer = optim.SGD(
+            sum(list(student.studySchedule.params) for student in self.student, []),
+            lr=0.001, momentum=0.9
+        )
+    def updateLoss(self):
+        self.J = 0
         for course in self.roster: # course name
             directory = self.roster[course] # list of student names
             courseSize = len(directory) # number of students in course
@@ -101,7 +107,14 @@ class AllStudents:
                 studyError += ((studyTime-studyGoal)/studyGoal)^2
             avgSchedule /= courseSize
             studyError /= courseSize
-            J += torch.linalg.vector_norm(avgSchedule)/scheduleLen
-            J -= studyError                
+            self.J -= torch.linalg.vector_norm(avgSchedule)/scheduleLen
+            self.J += studyError
     def fit(self):
-        pass
+        numIters = 1000
+        for i in range(numIters):
+            self.updateLoss()
+            self.J.backward()
+            self.optimizer.step()
+            print(i, self.J)
+
+
