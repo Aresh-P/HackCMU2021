@@ -1,4 +1,5 @@
 import math
+import random
 
 def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
     """
@@ -26,7 +27,12 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
     For each student (list):
       For each time (list):
         For each study group (list):
-          Probability student should be assigned to that study group.
+          Normalized probability student should be assigned to that study group.
+
+    For each student (list):
+      For each time (list):
+        For each study group (list):
+          Non-normalized log of probability student should be assigned to that study group.
     """
     study_group_sizes = []
     for study_group in range(courses*len(groups)):
@@ -40,8 +46,10 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
         study_group_sizes.append(study_group_counts)
     
     probabilities = []
+    log_raw = []
     for student in range(len(groups)):
         student_probabilities = []
+        student_log_raw = []
         for time in range(len(groups[0])):
             log_allocation_probabilities = [] #not normalized!
             for study_group in range(courses*len(groups)):
@@ -117,4 +125,20 @@ def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
         groups.append(student_groups)
 
     for iteration in range(iterations):
+        probabilities = probability_distribution(schedules, groups, sizes, courses, alpha, beta)
+        for student in range(len(schedules)):
+            for time in range(len(schedules[0])):
+                CDF_desired = random.random()
+                CDF = 0
+                #use default if probabilities don't work.
+                selected_group = student + schedules[student][time] * len(schedules)
+                for i in range(len(probabilities[student][time])):
+                    CDF += probabilities[student][time][i]
+                    if CDF >= CDF_desired:
+                        selected_group = i
+                        break
+                groups[student][time] = selected_group
 
+
+
+    return groups
