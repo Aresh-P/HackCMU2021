@@ -113,6 +113,11 @@ def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
     log of probabilities is proportional to e^(-cost function).
 
     iterations is the number of times to run the reallocation step.
+
+    Returns:
+    For each student (list):
+      For each time (list):
+        What study group (int) they are assigned to. (-1 means not in any group)
     """
     
     groups = []
