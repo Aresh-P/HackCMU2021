@@ -29,10 +29,10 @@ def minInput(studentName):
             else:
                 valid = True
     return min
-def createStudentGoal(studentName):
+def createStudentGroup(studentName):
     studentInput = {}
-    max = maxInput()
-    min = minInput()
+    max = maxInput(studentName)
+    min = minInput(studentName)
     studentInput["mingroup"] = min
     studentInput["maxgroup"] = max
     return studentInput
