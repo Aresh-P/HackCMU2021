@@ -1,0 +1,57 @@
+import numpy as np
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import sin, cos
+from math import ceil, floor
+
+# Need to get these from elsewhere
+numCourses = 3
+nameToNumber = {'a': 0, 'b': 1, 'c': 2}
+
+cycles = [7*24, 24, 8, 4, 2, 1] # From a week to an hour
+numCycles = len(cycles)
+inSize = 2*numCycles # Neural network inputs include sin and cos
+period = cycles[0]
+hourRes = 12 # 5-minute intervals
+scheduleLen = period
+hiddenSizes = [32, 32]
+outSize = numCourses+1 # Can either study (numCourses) or not (1)
+
+def timeToNNInput(t):
+    nnInput = torch.tensor(np.ndarray(inSize))
+    for c in range(numCycles):
+        cycle = cycles[c]
+        angle = 2*np.pi*t/cycle
+        nnInput[2*c] = torch.cos(angle)
+        nnInput[2*c+1] = torch.sin(angle)
+    return nnInput
+
+def blocksToFreeTime(freeBlocks):
+    freeTime = [False]*7*24*hourRes
+    for freeBlock in freeBlocks:
+        start = ceil(freeBlock["start"]*hourRes)
+        stop = floor(freeBlock["stop"]*hourRes)
+        for interval in range(start, stop):
+            freeTime[interval] = True
+    return freeTime
+
+class Student:
+    def __init__(self, name, freeTime, courses):
+        self.name = name
+        self.freeTime = freeTime
+        self.courses = courses
+
+class StudySchedule(nn.Module):
+    def __init__(self, courses):
+        super(StudySchedule, self).__init__()
+        self.layerSizes = [inSize]+hiddenSizes+[outSize]
+        self.numWeights = len(hiddenSizes)+1
+        fcLayers = nn.Sequential(
+            nn.Linear(layerSizes[w], layerSizes[w+1])
+            for w in range(numWeights))
+        softmax = nn.Softmax()
+        
+    def forward(self, t):
+        return softmax(fcLayers(timeToNNInput(t)))
+        
+print(timeToNNInput(0))
