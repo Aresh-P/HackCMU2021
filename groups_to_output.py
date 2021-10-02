@@ -27,7 +27,13 @@ def groups_to_output(groups):
                 if groups[student][time] != ongoing_session["study group number"]:
                     ongoing_session["stop"] = time
                     student_sessions.append(ongoing_session)
-                    ongoing_session = None
+                    if groups[student][time] == -1:
+                        ongoing_session = None
+                    else:
+                        ongoing_session = {}
+                        ongoing_session["start"] = time
+                        ongoing_session["study group number"] = groups[student][time]
+                        ongoing_session["subject"] = int(groups[student][time] / len(groups))
             time += 1
 
         if ongoing_session != None:
