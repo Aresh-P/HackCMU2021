@@ -1,5 +1,6 @@
 import math
 import random
+from copy import deepcopy
 
 def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
     """
@@ -34,6 +35,8 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
         For each study group (list):
           Non-normalized log of probability student should be assigned to that study group.
     """
+
+    print("groups = " + str(groups))
     study_group_sizes = []
     for study_group in range(courses*len(groups)):
         study_group_counts = []
@@ -41,9 +44,12 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
             count = 0
             for student in range(len(groups)):
                 if groups[student][time] == study_group:
+                    print("group = " + str(study_group) + " time = " + str(time) + " student = " + str(student))
                     count += 1
             study_group_counts.append(count)
         study_group_sizes.append(study_group_counts)
+
+    print("study_group_sizes = " + str(study_group_sizes))
     
     probabilities = []
     log_raw = []
@@ -143,6 +149,8 @@ def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
         probabilities = probability_output[0]
         log_raw = probability_output[1]
 
+        print(probabilities)
+
         total_cost = 0
         for student in range(len(schedules)):
             for time in range(len(schedules[0])):
@@ -163,8 +171,9 @@ def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
                     total_cost -= log_raw[student][time][selected_group] #value is negative, so subtract to add cost.
         
         costs_over_time.append(total_cost)
-        groups_over_time.append(groups)
+        groups_over_time.append(deepcopy(groups))
 
     min_cost = min(costs_over_time)
     best_iteration = costs_over_time.index(min_cost)
+
     return groups_over_time[best_iteration]
