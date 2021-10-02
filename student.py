@@ -1,15 +1,12 @@
 import numpy as np
 import torch
 from torch import nn, optim
-import torch.nn.functional as F
 from math import ceil, floor
 from student_info import StudentInfo
 
-# cycles = torch.Tensor(
-#    [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
-# hourRes = 2 # 30-minute intervals
-cycles = torch.Tensor([2, 1])
-hourRes = 3
+ cycles = torch.Tensor(
+    [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
+ hourRes = 2 # 30-minute intervals
 
 numCycles = len(cycles)
 inSize = 2*numCycles # Neural network inputs include sin and cos
@@ -41,6 +38,7 @@ def blocksToFreeTime(blocks):
 
 # see student_info.py
 class Student:
+
     def __init__(self, studentInfo):
         self.blocks = studentInfo.blocks
         self.goals = studentInfo.goals
@@ -49,20 +47,29 @@ class Student:
         self.courses = list(self.goals.keys())
         self.numCourses = len(self.courses)
         self.studySchedule = StudySchedule(self.numCourses+1)
+
     def updateSchedule(self, scheduleLen):
         self.scheduleTensor = torch.zeros(scheduleLen, self.numCourses+1)
-        for i in range(scheduleLen):
-            if self.freeTime[i]:
-                self.scheduleTensor[i]=self.studySchedule(times[i])
+        for t in range(scheduleLen):
+            if self.freeTime[t]:
+                self.scheduleTensor[t]=self.studySchedule(times[t])
         self.schedule = {}
         for c in range(self.numCourses+1):
             course = self.courses[c]
             self.schedule[course] = self.scheduleTensor[:, c]
+
+    def getBinSchedule(self):
+        binSchedule = [""]*scheduleLen
+        for t in np.random.permutation(scheduleLen):
+            
+        return binSchedule
+            
         
 # Neural network to model schedule
 # Requires number of courses
 # Inputs time, outputs probabilities of each course (or nothing)
 class StudySchedule(nn.Module):
+
     def __init__(self, outSize):
         super(StudySchedule, self).__init__()
         self.outSize = outSize
@@ -77,6 +84,7 @@ class StudySchedule(nn.Module):
         return self.softmax(self.fcLayers(timeToNNInput(t)))
 
 class AllStudents:
+
     def __init__(self, students):
         self.students = students # {str -> Student}
         self.roster = dict() # {str -> [str]}
@@ -90,6 +98,7 @@ class AllStudents:
             sum(list(student.studySchedule.params) for student in self.student, []),
             lr=0.001, momentum=0.9
         )
+
     def updateLoss(self):
         self.J = 0
         for course in self.roster: # course name
@@ -109,12 +118,14 @@ class AllStudents:
             studyError /= courseSize
             self.J -= torch.linalg.vector_norm(avgSchedule)/scheduleLen
             self.J += studyError
+
     def fit(self):
         numIters = 1000
         for i in range(numIters):
             self.updateLoss()
             self.J.backward()
             self.optimizer.step()
-            print(i, self.J)
-
+            if (i%100 == 99):
+                print("Iteration: ", i+1)
+                print("Loss: ", self.J)
 
