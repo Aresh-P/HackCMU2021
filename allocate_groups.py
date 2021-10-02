@@ -73,13 +73,19 @@ def probability_distribution(schedules, groups, sizes, courses, alpha, beta):
                     log_allocation_probabilities.append(-overall_penalty)
 
             max_log_probability = max(log_allocation_probabilities)
-            non_normalized_probabilities = [math.exp(log_probability - max_log_probability) for log_probability in log_allocation_probabilities]
-            normalization = sum(non_normalized_probabilities)
-            normalized_probabilities = [non_normalized_probability / normalization for non_normalized_probability in non_normalized_probabilities]
+            if max_log_probability == -float("inf"):
+                #schedules[student][time] is not any of the courses,
+                #so it must be -1, i.e. the student isn't studying.
+                #The probabilities should all be zero.
+                normalized_probabilities = [0 for log_probability in log_allocation_probabilities]
+            else:
+                #student is assigned to a course.
+                non_normalized_probabilities = [math.exp(log_probability - max_log_probability) for log_probability in log_allocation_probabilities]
+                normalization = sum(non_normalized_probabilities)
+                normalized_probabilities = [non_normalized_probability / normalization for non_normalized_probability in non_normalized_probabilities]
             student_probabilities.append(normalized_probabilities)
         probabilities.append(student_probabilities)
     return probabilities
-
 
 
 def allocate_groups(schedules):
