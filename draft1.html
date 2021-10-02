@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Study Group Matcher</title>
+		<link href="main.css" rel="stylesheet"/>
+		
+	</head>
+
+	<body>
+		<form class="form" id="myForm">
+			<input type="file" id="inpFile"><br>
+			<button type="submit">Upload File</button>
+		</form>
+
+		<script>
+
+			const myForm = document.getElementById("myForm");
+			const inpFile = document.getElementById("inpFile");
+
+			myForm.addEventListener("submit",e=> {
+				e.preventDefault();
+
+				const endpoint = "upload.php";
+				const formData = new FormData();
+
+				console.log(inpFile.files);
+
+				formData.append("inpFile",inpFile.files[0]); 
+
+				function fetchLocal(url) {
+				    return new Promise(function (resolve, reject) {
+				        var xhr = new XMLHttpRequest
+				        xhr.onload = function () {
+				            resolve(new Response(xhr.response, { status: xhr.status }))
+				        }
+				        xhr.onerror = function () {
+				            reject(new TypeError('Local request failed'))
+				        }
+				        xhr.open('GET', url)
+				        xhr.responseType = "arraybuffer";
+				        xhr.send(null)
+				    })
+				};
+
+				fetch(endpoint,{
+					method:"post",
+					body: formData
+				}).catch(console.error)
+			})
+		</script>
+	</body>
+</html>
