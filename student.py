@@ -5,18 +5,14 @@ import torch.nn.functional as F
 from torch import sin, cos
 from math import ceil, floor
 
-# Need to get these from elsewhere
-totalCourses = 3
-nameToNumber = {'a': 0, 'b': 1, 'c': 2}
-
 cycles = torch.Tensor(
     [7*24, 24, 8, 4, 2, 1]) # From a week to an hour
 numCycles = len(cycles)
 inSize = 2*numCycles # Neural network inputs include sin and cos
-period = cycles[0]
-hourRes = 1 # 12 for 5-minute intervals
+period = max(cycles)
+hourRes = 12 # 5-minute intervals
 scheduleLen = period
-hiddenSizes = [32, 32]
+hiddenSizes = [16]
 
 # Accepts time in hours (0 to 7*24)
 # Returns tensor of inputs to neural network
@@ -39,10 +35,11 @@ def blocksToFreeTime(freeBlocks):
             freeTime[interval] = True
     return freeTime
 
+# freeBlocks: list of dicts
+# courses: list of course names
 class Student:
-    def __init__(self, name, freeTime, courses):
-        self.name = name
-        self.freeTime = freeTime
+    def __init__(self, freeBlocks, courses):
+        self.freeTime = blocksToFreeTime(freeBlocks)
         self.courses = courses
         self.numCourses = len(courses)
         self.studySchedule = studySchedule(numCourses+1)
@@ -63,6 +60,22 @@ class StudySchedule(nn.Module):
         
     def forward(self, t):
         return self.softmax(self.fcLayers(timeToNNInput(t)))
-        
+
+# Input:
+# allStudents: dict of all students indexed by name
+# Output:
+# roster: lists of students indexed by course name
+# 
+def findShared(allCourses, allStudents):
+    allCourses = set()
+    for name in allStudents:
+        for course in student.courses:
+            pass
+    
+    roster = {course: [] for course in allCourses}
+    for name in allStudents:
+        for course in student.courses:
+            directory[course].append(student.name)
+
 print(timeToNNInput(0))
 print(blocksToFreeTime([{"start": 5, "stop": 7}, {"start": 8, "stop": 12}]))
