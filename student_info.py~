@@ -1,0 +1,3 @@
+class StudentInfo:
+    def __init__(self):
+        

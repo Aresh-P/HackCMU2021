@@ -21,4 +21,4 @@ def optimizer(user_requirements):
            "course": course,
            "students": {student1, student2, ...}}
     """
-    
+    pass
