@@ -127,21 +127,35 @@ def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
                 student_groups.append(study_group)
         groups.append(student_groups)
 
+    costs_over_time = []
+    groups_over_time = []
     for iteration in range(iterations):
-        probabilities = probability_distribution(schedules, groups, sizes, courses, alpha, beta)
+        probability_output = probability_distribution(schedules, groups, sizes, courses, alpha, beta)
+        probabilities = probability_output[0]
+        log_raw = probability_output[1]
+
+        total_cost = 0
         for student in range(len(schedules)):
             for time in range(len(schedules[0])):
-                CDF_desired = random.random()
-                CDF = 0
-                #use default if probabilities don't work.
-                selected_group = student + schedules[student][time] * len(schedules)
-                for i in range(len(probabilities[student][time])):
-                    CDF += probabilities[student][time][i]
-                    if CDF >= CDF_desired:
-                        selected_group = i
-                        break
-                groups[student][time] = selected_group
+                if schedules[student][time] == -1:
+                    groups[student][time] = -1
+                    #total_cost should remain untouched.
+                else:
+                    CDF_desired = random.random()
+                    CDF = 0
+                    #use default if probabilities don't work.
+                    selected_group = student + schedules[student][time] * len(schedules)
+                    for i in range(len(probabilities[student][time])):
+                        CDF += probabilities[student][time][i]
+                        if CDF >= CDF_desired:
+                            selected_group = i
+                            break
+                    groups[student][time] = selected_group
+                    total_cost -= log_raw[student][time][selected_group] #value is negative, so subtract to add cost.
+        
+        costs_over_time.append(total_cost)
+        groups_over_time.append(groups)
 
-
-
-    return groups
+    min_cost = min(costs_over_time)
+    best_iteration = costs_over_time.index(min_cost)
+    return groups_over_time[best_iteration]
