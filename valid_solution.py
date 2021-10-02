@@ -10,4 +10,4 @@ def valid_solution(user_requirements, proposed_solution):
     """
     for proposed_meeting in proposed_solution:
         for user in user_requirements:
-
+            
