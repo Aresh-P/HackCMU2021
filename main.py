@@ -32,5 +32,8 @@ def main():
     print()
     studentFolder = input("Please input the name of your study folder ----> ")
     studentInfo = createStudentInfos(studentFolder)
-    student = AllStudents(studentInfo)
-
+    allStudents = AllStudents(studentInfo)
+    allStudents.fit()
+    initialGroups = allStudents.getInitialGroups()
+    groups = online_allocate_groups(*initialGroups)
+    output = groups_to_output(groups)
