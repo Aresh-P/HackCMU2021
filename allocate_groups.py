@@ -106,6 +106,10 @@ def allocate_groups(schedules, sizes, courses, alpha, beta, iterations):
       For each time (list):
         What subject are they working on (specified as int, -1 means not studying)
 
+    sizes is of the form:
+    For each student (list):
+      {"mingroup": min desired study group size, "maxgroup": max desired study group size}
+    
     courses is the number of courses people are interested in.
     study groups per course = number of students = len(groups).
 
